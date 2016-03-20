@@ -14,6 +14,8 @@
 var scene, camera, renderer;
 var light;
 var camSpeed = 1;
+var WIDTH = window.innerWidth;
+var HEIGHT = window.innerHeight;
 
 var container;
 var controls;
@@ -40,6 +42,9 @@ function init()
 	scene = new THREE.Scene();
 
 
+
+
+
 	// LIGHT
 	// create light for the scene
 	light = new THREE.DirectionalLight( 0xffffff, 1);
@@ -57,6 +62,19 @@ function init()
 	cube = new THREE.Mesh( geo, mat );
 	cube.position.x = -10;
 	scene.add(cube);
+
+
+
+var planeGeo = new THREE.PlaneBufferGeometry( 100.1, 100.1 );
+	groundMirror = new THREE.Mirror( renderer, camera, { clipBias: 0.003, textureWidth: WIDTH, textureHeight: HEIGHT, color: 0x777777 } );
+var mirrorMesh = new THREE.Mesh( planeGeo, groundMirror.material );
+				mirrorMesh.add( groundMirror );
+				mirrorMesh.rotateX( - Math.PI / 2 );
+				scene.add( mirrorMesh );
+
+
+
+
 
 	for(var i=0; i<50; i++ ){
 		for(var j=0; j<50; j++) {
