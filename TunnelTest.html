@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>three.js webgl - mirror</title>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="js/lib/three.min.js"></script>
+    <script type="text/javascript" src="js/lib/OrbitControls.js"></script>
+      <script type="text/javascript" src="js/lib/OBJLoader.js"></script>
+    <style>
+    body {
+        color: #888888;
+        font-family: Monospace;
+        font-size: 13px;
+        background-color: #000;
+        margin: 0px;
+        overflow: hidden;
+    }
+    
+    #info {
+        position: absolute;
+        top: 0px;
+        width: 200px;
+        left: calc(50% - 100px);
+        text-align: center;
+    }
+    
+    a {
+        color: #00f;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <!-- <script src="../build/three.min.js"></script> -->
+    <script src="js/Mirror.js"></script>
+    <!-- <script src="js/controls/OrbitControls.js"></script> -->
+    <script>
+    // scene size
+    var WIDTH = window.innerWidth;
+    var HEIGHT = window.innerHeight;
+    var camSpeed = 1;
+
+    // camera
+    var VIEW_ANGLE = 45;
+    var ASPECT = WIDTH / HEIGHT;
+    var NEAR = 1;
+    var FAR = 1000;
+    var roomSize = 900;
+
+    var camera, scene, renderer;
+var model, texture;
+    var cameraControls;
+
+    var verticalMirror, groundMirror;
+    var sphereGroup, smallSphere;
+
+    function init() {
+
+        // renderer
+        renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(WIDTH, HEIGHT);
+
+        // scene
+        scene = new THREE.Scene();
+
+        // camera
+        camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+        camera.position.set(0, 75, 160);
+
+        cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
+        cameraControls.target.set(0, 40, 0);
+        cameraControls.maxDistance = 5400;
+        cameraControls.minDistance = -5010;
+        cameraControls.update();
+
+        var container = document.getElementById('container');
+        container.appendChild(renderer.domElement);
+
+
+
+
+
+
+
+
+
+
+
+    }
+
+    function fillScene() {
+
+        // Loading External Texture & Model
+    var manager = new THREE.LoadingManager();       //Handles and keeps track of loaded and pending data
+
+    // TEXTURE
+    texture = new THREE.Texture();
+    var loader = new THREE.ImageLoader( manager );
+    loader.load( '3D/CubeTexture.jpg', function ( image ) {
+        texture.image = image;
+        texture.needsUpdate = true;
+    } );
+    mat = new THREE.MeshBasicMaterial( {map: texture, side: THREE.DoubleSide} );
+
+        // MODLE (MESH)
+    // - Import using OBJLoader.js
+    // - reference: http://threejs.org/examples/webgl_loader_obj.html
+    var onProgress = function ( xhr ) {
+        if ( xhr.lengthComputable ) {
+            var percentComplete = xhr.loaded / xhr.total * 100;
+            console.log( Math.round(percentComplete, 2) + '% downloaded' );
+        }
+    };
+    var onError = function ( xhr ) {
+    };
+
+    var loader = new THREE.OBJLoader( manager );
+    loader.load( '3D/One.obj', function (object) {
+
+        // console.log(object);
+
+        // for all the children in the OBJ model
+        for(var i=0; i<object.children.length; i++){
+            if ( object.children[i] instanceof THREE.Mesh ) {
+                // object.children[i].material.map = texture;
+                object.children[i].material = mat;
+            }
+        }
+
+       
+
+        model = object;
+        model.scale.set(7,7,7);
+        model.position.z = -roomSize / 2;
+        model.position.y = roomSize / 2;
+        // model.position.z = 150;
+        scene.add( model );
+
+    }, onProgress, onError );
+
+
+        var geo = new THREE.BoxGeometry(20, 20, 20);
+        var mat = new THREE.MeshLambertMaterial({
+            color: 0xffff00
+        });
+        cube = new THREE.Mesh(geo, mat);
+        cube.position.x = -10;
+        // scene.add(cube);
+
+
+
+        // for (var i = 0; i < 20; i++) {
+        //     for (var j = 0; j < 20; j++) {
+        //         mat = new THREE.MeshLambertMaterial({
+        //             color: 0xFF748C
+        //         }); // random colors!
+        //         var mesh = new THREE.Mesh(geo, mat);
+        //         mesh.position.set(-300 + (30 * i), (j * 17), (70 + j * 40))
+        //         scene.add(mesh);
+        //     }
+        // }
+
+
+
+
+
+
+
+        var planeGeo = new THREE.PlaneBufferGeometry(roomSize + .1, roomSize + .1);
+
+        // MIRROR planes
+        groundMirror = new THREE.Mirror(renderer, camera, {
+            clipBias: 0.003,
+            textureWidth: WIDTH,
+            textureHeight: HEIGHT,
+            color: 0x777777
+        });
+
+        var mirrorMesh = new THREE.Mesh(planeGeo, groundMirror.material);
+        mirrorMesh.add(groundMirror);
+        mirrorMesh.rotateX(-Math.PI / 2);
+        scene.add(mirrorMesh);
+
+        verticalMirror = new THREE.Mirror(renderer, camera, {
+            clipBias: 0.003,
+            textureWidth: WIDTH,
+            textureHeight: HEIGHT,
+            color: 0x889999
+        });
+
+        var verticalMirrorMesh = new THREE.Mesh(planeGeo, verticalMirror.material);
+        verticalMirrorMesh.add(verticalMirror);
+        verticalMirrorMesh.position.y = 99;
+        verticalMirrorMesh.position.z = -99;
+        scene.add(verticalMirrorMesh);
+
+
+        // 	verticalMirror2 = new THREE.Mirror( renderer, camera, { clipBias: 0.003, textureWidth: WIDTH, textureHeight: HEIGHT, color:0x889999 } );
+
+        // var verticalMirrorMesh2 = new THREE.Mesh( new THREE.PlaneBufferGeometry(roomSize*3, roomSize*3), verticalMirror2.material );
+        // verticalMirrorMesh2.add( verticalMirror2 );
+        // verticalMirrorMesh2.position.y = 25;
+        // verticalMirrorMesh2.position.z = 199;
+        // scene.add( verticalMirrorMesh2 );
+
+        sphereGroup = new THREE.Object3D();
+        scene.add(sphereGroup);
+
+        var geometry = new THREE.CylinderGeometry(0.1, 15 * Math.cos(Math.PI / 180 * 30), 0.1, 24, 1);
+        var material = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            emissive: 0x444444
+        });
+        var sphereCap = new THREE.Mesh(geometry, material);
+        sphereCap.position.y = -15 * Math.sin(Math.PI / 180 * 30) - 0.05;
+        sphereCap.rotateX(-Math.PI);
+
+        var geometry = new THREE.SphereGeometry(15, 24, 24, Math.PI / 2, Math.PI * 2, 0, Math.PI / 180 * 120);
+        var halfSphere = new THREE.Mesh(geometry, material);
+        halfSphere.add(sphereCap);
+        halfSphere.rotateX(-Math.PI / 180 * 135);
+        halfSphere.rotateZ(-Math.PI / 180 * 20);
+        halfSphere.position.y = 7.5 + 15 * Math.sin(Math.PI / 180 * 30);
+
+        sphereGroup.add(halfSphere);
+
+        var geometry = new THREE.IcosahedronGeometry(12, 0);
+        var material = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            emissive: 0x333333,
+            shading: THREE.FlatShading
+        });
+        smallSphere = new THREE.Mesh(geometry, material);
+        scene.add(smallSphere);
+
+        // walls
+        var planeTop = new THREE.Mesh(planeGeo, new THREE.MeshPhongMaterial({
+            color: 0xff66b3
+        }));
+        planeTop.position.y = roomSize;
+        planeTop.rotateX(Math.PI / 2);
+        scene.add(planeTop);
+
+        var planeBack = new THREE.Mesh(planeGeo, new THREE.MeshPhongMaterial({
+            color: 0xdda0dd
+        }));
+        planeBack.position.z = -roomSize / 2;
+        planeBack.position.y = roomSize / 2;
+        scene.add(planeBack);
+
+        var planeFront = new THREE.Mesh(planeGeo, new THREE.MeshPhongMaterial({
+            color: 0xff6666
+        }));
+        planeFront.position.z = roomSize / 2;
+        planeFront.position.y = roomSize;
+        planeFront.rotateY(Math.PI);
+        scene.add(planeFront);
+
+        var planeRight = new THREE.Mesh(planeGeo, new THREE.MeshPhongMaterial({
+            color: 0xffc0cb
+        }));
+        planeRight.position.x = roomSize / 2;
+        planeRight.position.y = roomSize / 2;
+        planeRight.rotateY(-Math.PI / 2);
+        scene.add(planeRight);
+
+        var planeLeft = new THREE.Mesh(planeGeo, new THREE.MeshPhongMaterial({
+            color: 0xffc0cb
+        }));
+        planeLeft.position.x = -roomSize / 2;
+        planeLeft.position.y = roomSize / 2;
+        planeLeft.rotateY(Math.PI / 2);
+        scene.add(planeLeft);
+
+        //     var planeLeftOuter = new THREE.Mesh(planeGeo, new THREE.MeshPhongMaterial({
+        //     color: 0xffc0cb
+        // }));
+        // planeLeftOuter.position.x = -roomSize * 2;
+        // planeLeftOuter.position.y = roomSize * 2;
+        // planeLeftOuter.rotateY(Math.PI / 2);
+        // scene.add(planeLeftOuter);
+
+        // lights
+        var mainLight = new THREE.PointLight(0xff66b3, 1.5, 250);
+        mainLight.position.y = 60;
+        scene.add(mainLight);
+
+
+         var mainLight2 = new THREE.PointLight(0xff66b3, 1.5, 250);
+        mainLight2.position.y = 220;
+        mainLight2.position.z = 220;
+        scene.add(mainLight2);
+
+        var greenLight = new THREE.PointLight(0xffc0cb, 0.25, 1000);
+        greenLight.position.set(550, 50, 0);
+        scene.add(greenLight);
+
+        var redLight = new THREE.PointLight(0xff66b3, 0.25, 1000);
+        redLight.position.set(-550, 50, 0);
+        scene.add(redLight);
+
+        var blueLight = new THREE.PointLight(0xff66b3, 0.25, 1000);
+        blueLight.position.set(0, 50, 550);
+        scene.add(blueLight);
+
+    }
+
+    function render() {
+
+        // render (update) the mirrors
+        groundMirror.renderWithMirror(verticalMirror);
+        verticalMirror.renderWithMirror(groundMirror);
+
+        renderer.render(scene, camera);
+
+    }
+
+    function update() {
+
+        camera.position.z += camSpeed;
+        // console.log(camera.position.z)
+        if (camera.position.z > 700 || camera.position.z < -100) {
+            switchCamera();
+        }
+
+        requestAnimationFrame(update);
+
+        var timer = Date.now() * 0.01;
+
+        sphereGroup.rotation.y -= 0.002;
+
+        smallSphere.position.set(
+            Math.cos(timer * 0.1) * 30,
+            Math.abs(Math.cos(timer * 0.2)) * 20 + 5,
+            Math.sin(timer * 0.1) * 30
+        );
+        smallSphere.rotation.y = (Math.PI / 2) - timer * 0.1;
+        smallSphere.rotation.z = timer * 0.8;
+
+        cameraControls.update();
+
+        render();
+    }
+
+
+    function switchCamera() {
+        camSpeed = -camSpeed;
+        // console.log(camSpeed)
+    }
+
+    init();
+    fillScene();
+    update();
+    </script>
+</body>
+
+</html>
